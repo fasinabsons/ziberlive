@@ -1,0 +1,1 @@
+This is a placeholder file to allow creation of the /l10n directory for localization support. Please remove this file after adding your ARB and Dart localization files.

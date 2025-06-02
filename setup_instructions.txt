@@ -1,0 +1,149 @@
+# ziberlive Co-Living Management App - Setup Instructions
+
+This document provides instructions for setting up the ziberlive app development environment and running it for the first time.
+
+## Prerequisites
+
+- Flutter SDK (v3.0.0 or later)
+- Dart SDK (v3.0.0 or later)
+- Android Studio or VS Code with Flutter plugins
+- Git
+- Firebase account (for premium features only)
+
+## Initial Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/ziberlive.git
+   cd ziberlive
+   ```
+
+2. **Install dependencies**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Create assets directory structure**
+   ```bash
+   mkdir -p assets/images
+   ```
+
+4. **Create empty assets directory**
+   If you don't have the required asset files yet, create placeholder files:
+   ```bash
+   touch assets/images/community_tree_level_1.png
+   touch assets/images/community_tree_level_2.png
+   touch assets/images/community_tree_level_3.png
+   touch assets/images/community_tree_level_4.png
+   touch assets/images/community_tree_level_5.png
+   ```
+
+5. **Firebase setup (optional, for premium features)**
+   - Create a new Firebase project at https://console.firebase.google.com/
+   - Register your app with Firebase (Android & iOS)
+   - Download the configuration files:
+     - For Android: `google-services.json` to `android/app/`
+     - For iOS: `GoogleService-Info.plist` to `ios/Runner/`
+   - Create a file called `lib/firebase_options.dart` with your Firebase configuration
+
+6. **Configure app settings**
+   - Verify `AndroidManifest.xml` has proper permissions
+   - Ensure `info.plist` has necessary permissions for iOS
+   - Create a `.env` file for environment-specific settings (optional)
+
+## Running the App
+
+### Development Mode
+
+1. **Choose a device or emulator**
+   ```bash
+   flutter devices
+   ```
+
+2. **Run the app in development mode**
+   ```bash
+   flutter run
+   ```
+
+3. **Run with specific device (if multiple connected)**
+   ```bash
+   flutter run -d <device_id>
+   ```
+
+### Mock Data Setup
+
+The app includes a mock data service (`data_service_mock.dart`) that populates the database with sample data for testing. To use it:
+
+1. Ensure the app is configured to use the mock service in `app_state_provider.dart`:
+   ```dart
+   // Use mock service for development
+   final DataService _dataService = DataService(); // This uses the mock implementation
+   ```
+
+2. Launch the app, and it will automatically populate with sample data.
+
+3. Test user credentials:
+   - Owner-Admin: `owner@example.com` (manages 3+ apartments)
+   - Roommate-Admin: `roommate@example.com` (manages 1-2 apartments)
+   - Guest: `guest@example.com` (regular user)
+
+### Feature Flags
+
+You can enable/disable features by modifying the following in `lib/config.dart`:
+
+```dart
+// Feature flags
+const bool kUseFirebase = false;  // Set to true to enable premium features
+const bool kUseAds = false;       // Set to true to show ads
+const bool kUseMockP2P = true;    // Set to false to use real P2P connections
+const bool kAllowMultiAdmin = true; // Allow multiple admins in the same instance
+```
+
+## Troubleshooting
+
+1. **P2P Connection Issues**
+   - Ensure Bluetooth and WiFi permissions are granted
+   - Verify devices are on the same network for WiFi P2P
+   - Check `p2p_sync_service.dart` logs for connection details
+
+2. **Database Issues**
+   - Delete the app and reinstall if database schema changes
+   - Check `local_db_service.dart` for database path and initialization
+
+3. **Firebase Connection Issues**
+   - Verify `google-services.json` and `GoogleService-Info.plist` are correctly placed
+   - Ensure Firebase project has the necessary services enabled
+   - Check that the package name/bundle ID matches your Firebase configuration
+
+4. **UI Rendering Issues**
+   - Run `flutter clean` and then `flutter pub get`
+   - Update to the latest Flutter version
+   - Check theme.dart for any styling conflicts
+
+## Building for Production
+
+1. **Android**
+   ```bash
+   flutter build apk --release
+   # Or for app bundle
+   flutter build appbundle --release
+   ```
+
+2. **iOS**
+   ```bash
+   flutter build ios --release
+   # Then archive using Xcode
+   ```
+
+## Contributing
+
+1. Create a new branch for your feature
+2. Implement changes and test thoroughly
+3. Create a pull request with detailed description
+4. Ensure all tests pass before merging
+
+## Contact
+
+For support or questions, contact:
+- Email: support@ziberlive.example.com
+- GitHub Issues: https://github.com/yourusername/ziberlive/issues 

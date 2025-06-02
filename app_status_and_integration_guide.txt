@@ -1,0 +1,921 @@
+# DreamFlow Co-Living Management App - Status & Integration Guide
+
+## CURRENT APP STATUS (65-70% Complete)
+
+### File Structure & Purpose
+
+1. **Main Application Files**
+   - `main.dart`: Entry point for the app, sets up navigation, theme, and provider structure
+   - `theme.dart`: Defines light/dark themes, colors, typography, and consistent styling
+   - `config.dart`: Central configuration with feature flags, environment settings, and constants
+
+2. **Models**
+   - `app_models.dart`: Core data models (User, Bill, Task, Vote) with JSON serialization
+   - `user_model.dart`: User profile with roles (Owner-Admin, Roommate-Admin, Guest)
+   - `bill_model.dart`: Bill management with dynamic splitting based on subscriptions
+   - `apartment_model.dart`: Apartment and room management for vacancy tracking
+   - `investment_group_model.dart`: Investment group tracking and ROI calculation
+   - `grocery_team_model.dart`: Grocery team assignments and expense tracking
+   - `grocery_receipt_model.dart`: Receipt data structure for expense tracking
+   - `vacancy_management_model.dart`: Vacancy tracking and optimization
+   - `schedule_model.dart`: Meal and task scheduling
+
+3. **Providers**
+   - `app_state_provider.dart`: Central state management connecting UI to services
+
+4. **Services**
+   - `data_service.dart`: Core data operations and CRUD functionality
+   - `data_service_mock.dart`: Mock implementation for development
+   - `p2p_sync_service.dart`: P2P synchronization (currently mock implementation)
+   - `local_db_service.dart`: SQLite database operations
+   - `firebase_service.dart`: Firebase wrapper (stub for premium features)
+   - `firebase_mock.dart`: Mock Firebase implementation for free tier
+   - `notification_service.dart`: Local notification handling
+   - `coliving_credits_service.dart`: Credits system management
+   - `backup_service.dart`: Local backup functionality
+   - `ocr_service.dart`: Receipt scanning using Google Vision (for premium)
+   - `ads_service.dart`: Ad display management (stub for free tier)
+
+5. **Screens**
+   - `home_screen.dart`: Dashboard with stats, Community Tree, and notifications
+   - `bill_screen.dart`: Bill management, payment tracking, and splitting
+   - `community_screen.dart`: Community features, voting, and leaderboard
+   - `task_screen.dart`: Task assignment, rotation, and completion tracking
+   - `profile_screen.dart`: User profile, settings, and admin functions
+   - `settings_screen.dart`: App preferences and configuration
+   - `grocery_receipt_screen.dart`: Receipt entry and expense tracking
+   - `grocery_team_screen.dart`: Team management for shopping
+   - `investment_group_screen.dart`: Investment tracking and management
+   - `schedule_screen.dart`: Meal and task scheduling interface
+   - `vacancy_dashboard_screen.dart`: Vacancy overview and management
+   - `premium_features_screen.dart`: Premium feature showcase
+   - `bulk_import_export_screen.dart`: Data import/export functionality
+   - `admin_bill_toggles.dart`: Admin-specific bill management
+
+6. **Widgets**
+   - `custom_widget.dart`: Reusable UI components
+   - `community_tree_widget.dart`: Tree visualization for gamification
+   - `progress_bar_fomo.dart`: Progress visualization with FOMO elements
+   - `custom_labels_settings.dart`: Customizable service label management
+   - `conflict_alert_widget.dart`: P2P sync conflict resolution UI
+   - `audit_trail_widget.dart`: Activity tracking visualization
+
+### Implemented Features
+
+1. **Core Architecture**
+   - Navigation system with 5 tabs
+   - Provider pattern for state management
+   - Theme configuration with light/dark mode
+   - Model structure for all entities
+   - SQLite local database
+
+2. **User Management**
+   - User roles (Owner-Admin, Roommate-Admin, Guest)
+   - Profile management
+   - Role-based permissions (partial)
+
+3. **Bill Management**
+   - Bill creation and tracking
+   - Payment status monitoring
+   - Basic bill splitting logic
+
+4. **Community Features**
+   - Voting system
+   - Community Tree visualization (basic)
+   - Co-Living Credits system
+
+5. **Task Management**
+   - Task assignment and rotation
+   - Completion tracking
+   - Credit rewards
+
+6. **UI Components**
+   - Custom widgets for consistent UI
+   - Screen implementations
+   - Basic animations
+
+### Partially Implemented Features
+
+1. **P2P Sync**
+   - Basic structure exists
+   - Mock implementation only
+   - Missing conflict resolution
+   - Missing proper connection handling
+
+2. **Role-Based UI**
+   - Basic structure exists
+   - Incomplete permission checks
+   - Missing dynamic UI based on roles
+
+3. **Dynamic Bill Splitting**
+   - Basic structure exists
+   - Incomplete subscription-based allocation
+   - Missing guest handling
+
+4. **Community Cooking**
+   - Basic UI exists
+   - Incomplete menu management
+   - Missing grocery team coordination
+
+5. **Investment Groups**
+   - Basic models exist
+   - Incomplete ROI tracking
+   - Missing group chat
+
+6. **Vacancy Management**
+   - Basic models exist
+   - Incomplete dashboard
+   - Missing optimization suggestions
+
+### Missing Features
+
+1. **Firebase Integration**
+   - Cloud backups
+   - User photo uploads
+   - Push notifications
+   - Public vacancy listings
+   - Analytics
+
+2. **Premium Features**
+   - Web dashboard
+   - Advanced analytics
+   - AI-based forecasting
+   - Report exports
+
+3. **Multi-Language Support**
+   - Structure exists
+   - Missing translations
+
+4. **Advanced P2P Sync**
+   - Queuing system
+   - Conflict resolution
+   - Delta syncing
+   - QR code/Bluetooth initial connection
+
+## UPDATED DEPENDENCIES
+
+The app now uses the following updated dependencies:
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Core dependencies
+  provider: ^6.1.2
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  shared_preferences: ^2.5.3
+
+  # UI and animations
+  flutter_animate: ^4.5.2
+  google_fonts: ^6.2.1
+  share_plus: ^11.0.0
+  qr_flutter: ^4.1.0
+  flutter_local_notifications: ^19.2.1
+  
+  # P2P sync
+  nearby_connections: ^4.3.0
+
+  # Optional Premium Features
+  firebase_core: ^3.13.3
+  firebase_auth: ^5.5.4
+  firebase_storage: ^12.4.6
+  firebase_messaging: ^15.2.6
+  google_mobile_ads: ^6.0.0
+  mobile_scanner: ^7.0.0
+  google_vision: ^2.0.0+6
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+```
+
+## FIREBASE/SUPABASE INTEGRATION PLAN
+
+### Option 1: Firebase Integration
+
+1. **Setup Steps**
+   - Create Firebase project at https://console.firebase.google.com/
+   - Register Android & iOS apps
+   - Download configuration files:
+     - Android: `google-services.json` to `android/app/`
+     - iOS: `GoogleService-Info.plist` to `ios/Runner/`
+   - Create `firebase_options.dart` using FlutterFire CLI:
+     ```bash
+     dart pub global activate flutterfire_cli
+     flutterfire configure
+     ```
+
+2. **Code Changes**
+   - Update `main.dart` to initialize Firebase with the latest version:
+     ```dart
+     import 'package:firebase_core/firebase_core.dart';
+     import 'firebase_options.dart';
+
+     void main() async {
+       WidgetsFlutterBinding.ensureInitialized();
+       if (kUseFirebase) {
+         await Firebase.initializeApp(
+           options: DefaultFirebaseOptions.currentPlatform,
+         );
+       }
+       runApp(const MyApp());
+     }
+     ```
+   - Update `firebase_service.dart` to use real Firebase with latest API:
+     ```dart
+     import 'package:firebase_auth/firebase_auth.dart';
+     import 'package:firebase_storage/firebase_storage.dart';
+     import 'package:firebase_messaging/firebase_messaging.dart';
+
+     class FirebaseService {
+       static Future<void> _initializeRealFirebase() async {
+         // Real implementation using Firebase packages
+       }
+       
+       static FirebaseAuth getAuth() {
+         return FirebaseAuth.instance;
+       }
+       
+       // Other methods for Storage, Messaging, etc.
+     }
+     ```
+   - Implement cloud backup in `backup_service.dart`:
+     ```dart
+     Future<void> backupToCloud(String userId, String jsonData) async {
+       if (!kUseFirebase) return;
+       
+       final storage = FirebaseStorage.instance;
+       final ref = storage.ref('backups/$userId/backup_${DateTime.now().toIso8601String()}.json');
+       await ref.putString(jsonData);
+     }
+     ```
+
+3. **Premium Feature Implementation**
+   - User Photos: Use Firebase Storage
+   - Push Notifications: Use Firebase Messaging
+   - Analytics: Use Firebase Analytics
+   - Public Listings: Store in Firestore
+
+4. **Security Rules**
+   - Set up Firebase Security Rules to restrict access to premium users
+   - Example Firestore rules:
+     ```
+     rules_version = '2';
+     service cloud.firestore {
+       match /databases/{database}/documents {
+         match /users/{userId} {
+           allow read: if request.auth != null && request.auth.uid == userId;
+           allow write: if request.auth != null && request.auth.uid == userId;
+         }
+         match /backups/{userId}/{documents=**} {
+           allow read, write: if request.auth != null && request.auth.uid == userId;
+         }
+       }
+     }
+     ```
+
+### Option 2: Supabase Integration
+
+1. **Setup Steps**
+   - Create Supabase project at https://app.supabase.io/
+   - Get API URL and anon key
+   - Add to `.env` file (create this file):
+     ```
+     SUPABASE_URL=your_supabase_url
+     SUPABASE_ANON_KEY=your_supabase_anon_key
+     ```
+
+2. **Code Changes**
+   - Add Supabase packages to `pubspec.yaml`:
+     ```yaml
+     dependencies:
+       supabase_flutter: ^2.0.0
+       flutter_dotenv: ^5.1.0
+     ```
+   - Create `supabase_service.dart`:
+     ```dart
+     import 'package:supabase_flutter/supabase_flutter.dart';
+     import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+     class SupabaseService {
+       static Future<void> initialize() async {
+         await dotenv.load();
+         await Supabase.initialize(
+           url: dotenv.env['SUPABASE_URL']!,
+           anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+         );
+       }
+       
+       static SupabaseClient get client => Supabase.instance.client;
+       
+       // Auth, storage, and other methods
+     }
+     ```
+   - Update `main.dart`:
+     ```dart
+     import 'package:dreamflow/services/supabase_service.dart';
+
+     void main() async {
+       WidgetsFlutterBinding.ensureInitialized();
+       if (kUseSupabase) {
+         await SupabaseService.initialize();
+       }
+       runApp(const MyApp());
+     }
+     ```
+
+3. **Premium Feature Implementation**
+   - User Photos: Use Supabase Storage
+   - Analytics: Use Supabase Database
+   - Backups: Store in Supabase Storage
+   - Public Listings: Store in Supabase Database
+
+4. **Security Rules**
+   - Set up Row Level Security (RLS) in Supabase
+   - Example policy:
+     ```sql
+     CREATE POLICY "Users can only access their own data"
+     ON public.users
+     FOR ALL
+     USING (auth.uid() = user_id);
+     ```
+
+### Recommended Approach
+Firebase is recommended for this app because:
+1. Better push notification support
+2. More mature offline capabilities
+3. Easier integration with Flutter
+4. More comprehensive analytics
+5. Better documentation and community support
+
+## P2P SYNC ENHANCEMENT PLAN
+
+The current P2P sync implementation is mock-only. Here's how to implement real P2P sync with the updated nearby_connections package:
+
+1. **Proper Implementation of `p2p_sync_service.dart`**
+   ```dart
+   import 'dart:convert';
+   import 'dart:typed_data';
+   import 'package:nearby_connections/nearby_connections.dart';
+   import 'package:dreamflow/config.dart';
+   import 'package:uuid/uuid.dart';
+   
+   class P2PService {
+     final Strategy _strategy = Strategy.P2P_STAR;
+     final String _serviceId = kServiceId;
+     final Nearby _nearby = Nearby();
+     
+     // Connection methods
+     Future<void> startAdvertising() async {
+       await _nearby.startAdvertising(
+         _getDeviceId(),
+         _strategy,
+         serviceId: _serviceId,
+         onConnectionInitiated: _onConnectionInitiated,
+         onConnectionResult: _onConnectionResult,
+         onDisconnected: _onDisconnected,
+       );
+     }
+     
+     // Connection handlers
+     void _onConnectionInitiated(String id, ConnectionInfo info) {
+       // Handle connection with versioning
+       _nearby.acceptConnection(
+         id,
+         onPayloadReceived: (String endpointId, Payload payload) {
+           // Process received data with versioning
+           if (payload.type == PayloadType.BYTES) {
+             final data = utf8.decode(payload.bytes!);
+             final json = jsonDecode(data);
+             _handleReceivedData(json);
+           }
+         },
+       );
+     }
+     
+     // Data transfer with versioning and conflict resolution
+     Future<void> _sendData(String endpointId, Map<String, dynamic> data) async {
+       data['timestamp'] = DateTime.now().toIso8601String();
+       data['version'] = kDataVersion;
+       data['device_id'] = _getDeviceId();
+       
+       final payload = Uint8List.fromList(utf8.encode(jsonEncode(data)));
+       await _nearby.sendBytesPayload(endpointId, payload);
+     }
+     
+     // Get device ID
+     String _getDeviceId() {
+       // Use stored device ID or generate new one
+       return const Uuid().v4();
+     }
+     
+     // Handle connection result
+     void _onConnectionResult(String id, Status status) {
+       if (status == Status.CONNECTED) {
+         // Connection successful
+       } else {
+         // Connection failed
+       }
+     }
+     
+     // Handle disconnection
+     void _onDisconnected(String id) {
+       // Handle peer disconnection
+     }
+     
+     // Handle received data
+     void _handleReceivedData(Map<String, dynamic> data) {
+       // Process data with conflict resolution
+     }
+   }
+   ```
+
+2. **Conflict Resolution**
+   ```dart
+   class ConflictResolver {
+     static Map<String, dynamic> resolveConflict(
+       Map<String, dynamic> localData,
+       Map<String, dynamic> remoteData,
+     ) {
+       // Compare timestamps
+       final localTime = DateTime.parse(localData['timestamp']);
+       final remoteTime = DateTime.parse(remoteData['timestamp']);
+       
+       // Last-writer-wins strategy
+       if (remoteTime.isAfter(localTime)) {
+         return remoteData;
+       }
+       
+       // Field-by-field merge for same timestamp
+       if (remoteTime.isAtSameMomentAs(localTime)) {
+         // Merge logic
+         final mergedData = Map<String, dynamic>.from(localData);
+         
+         // Merge specific fields based on priority
+         for (final key in remoteData.keys) {
+           if (_hasHigherPriority(remoteData, localData, key)) {
+             mergedData[key] = remoteData[key];
+           }
+         }
+         
+         return mergedData;
+       }
+       
+       return localData;
+     }
+     
+     static bool _hasHigherPriority(
+       Map<String, dynamic> remoteData,
+       Map<String, dynamic> localData,
+       String key,
+     ) {
+       // Implement priority logic
+       return true;
+     }
+   }
+   ```
+
+3. **Delta Syncing**
+   ```dart
+   class DeltaSyncManager {
+     Future<Map<String, dynamic>> getChangesSinceLastSync(DateTime lastSyncTime) async {
+       // Query database for changes since lastSyncTime
+       final changes = <String, dynamic>{};
+       
+       // Add changed users
+       final changedUsers = await _getChangedUsers(lastSyncTime);
+       if (changedUsers.isNotEmpty) {
+         changes['users'] = changedUsers;
+       }
+       
+       // Add changed bills
+       final changedBills = await _getChangedBills(lastSyncTime);
+       if (changedBills.isNotEmpty) {
+         changes['bills'] = changedBills;
+       }
+       
+       // Add other changed entities
+       
+       return changes;
+     }
+     
+     Future<List<Map<String, dynamic>>> _getChangedUsers(DateTime lastSyncTime) async {
+       // Query for changed users
+       return [];
+     }
+     
+     Future<List<Map<String, dynamic>>> _getChangedBills(DateTime lastSyncTime) async {
+       // Query for changed bills
+       return [];
+     }
+     
+     Future<void> applyRemoteChanges(Map<String, dynamic> changes) async {
+       // Apply only changed data
+       if (changes.containsKey('users')) {
+         await _applyUserChanges(changes['users']);
+       }
+       
+       if (changes.containsKey('bills')) {
+         await _applyBillChanges(changes['bills']);
+       }
+       
+       // Apply other entity changes
+     }
+     
+     Future<void> _applyUserChanges(List<dynamic> users) async {
+       // Apply user changes
+     }
+     
+     Future<void> _applyBillChanges(List<dynamic> bills) async {
+       // Apply bill changes
+     }
+   }
+   ```
+
+4. **QR Code Connection with mobile_scanner**
+   ```dart
+   import 'dart:convert';
+   import 'package:flutter/material.dart';
+   import 'package:mobile_scanner/mobile_scanner.dart';
+   import 'package:dreamflow/config.dart';
+   
+   class QRScannerScreen extends StatefulWidget {
+     final Function(String) onQRScanned;
+     
+     const QRScannerScreen({Key? key, required this.onQRScanned}) : super(key: key);
+     
+     @override
+     State<QRScannerScreen> createState() => _QRScannerScreenState();
+   }
+   
+   class _QRScannerScreenState extends State<QRScannerScreen> {
+     Barcode? _barcode;
+     
+     @override
+     Widget build(BuildContext context) {
+       return Scaffold(
+         appBar: AppBar(title: const Text('Scan QR Code')),
+         body: Stack(
+           children: [
+             MobileScanner(
+               onDetect: (BarcodeCapture barcodes) {
+                 if (mounted && barcodes.barcodes.isNotEmpty) {
+                   final barcode = barcodes.barcodes.first;
+                   setState(() {
+                     _barcode = barcode;
+                   });
+                   
+                   // Process the scanned QR code
+                   if (barcode.rawValue != null) {
+                     widget.onQRScanned(barcode.rawValue!);
+                     Navigator.pop(context);
+                   }
+                 }
+               },
+             ),
+             Align(
+               alignment: Alignment.bottomCenter,
+               child: Container(
+                 height: 100,
+                 color: Colors.black.withOpacity(0.4),
+                 child: Center(
+                   child: Text(
+                     _barcode?.rawValue ?? 'Scan a QR code to connect',
+                     style: const TextStyle(color: Colors.white),
+                   ),
+                 ),
+               ),
+             ),
+           ],
+         ),
+       );
+     }
+   }
+   
+   class QRConnectionManager {
+     String generateConnectionQR() {
+       final data = {
+         'device_id': _getDeviceId(),
+         'timestamp': DateTime.now().toIso8601String(),
+         'service_id': kServiceId,
+       };
+       return jsonEncode(data);
+     }
+     
+     Future<void> connectViaQR(String qrData) async {
+       final data = jsonDecode(qrData);
+       // Connect using the parsed data
+     }
+     
+     String _getDeviceId() {
+       // Get or generate device ID
+       return const Uuid().v4();
+     }
+   }
+   ```
+
+## OCR IMPLEMENTATION WITH GOOGLE VISION
+
+Replace the previous OCR implementation with Google Vision for better receipt scanning:
+
+```dart
+import 'dart:io';
+import 'package:google_vision/google_vision.dart';
+import 'package:dreamflow/config.dart';
+
+class OCRService {
+  late GoogleVision _googleVision;
+  bool _initialized = false;
+  
+  Future<void> initialize() async {
+    if (_initialized) return;
+    
+    try {
+      // Initialize with service account JSON (should be stored securely)
+      _googleVision = await GoogleVision.withJwt('assets/service_account.json');
+      _initialized = true;
+    } catch (e) {
+      print('Error initializing Google Vision: $e');
+    }
+  }
+  
+  Future<String> scanReceipt(File imageFile) async {
+    if (!_initialized) await initialize();
+    
+    try {
+      // Create a painter from the image file
+      final painter = Painter.fromFilePath(imageFile.path);
+      
+      // Create annotation request for text detection
+      final requests = AnnotationRequests(requests: [
+        AnnotationRequest(image: painter, features: [
+          Feature(maxResults: 10, type: 'TEXT_DETECTION')
+        ])
+      ]);
+      
+      // Get annotations
+      final AnnotatedResponses annotatedResponses = 
+          await _googleVision.annotate(requests: requests);
+      
+      // Extract text from annotations
+      String extractedText = '';
+      for (var annotatedResponse in annotatedResponses.responses) {
+        for (var textAnnotation in annotatedResponse.textAnnotations) {
+          extractedText += '${textAnnotation.description}\n';
+          break; // First annotation contains the entire text
+        }
+      }
+      
+      return extractedText;
+    } catch (e) {
+      print('Error scanning receipt: $e');
+      return '';
+    }
+  }
+  
+  Future<Map<String, dynamic>> extractReceiptData(String text) async {
+    // Parse the extracted text to get receipt data
+    // This would involve NLP or regex patterns to identify:
+    // - Store name
+    // - Date
+    // - Total amount
+    // - Individual items and prices
+    
+    // For now, return a simple example
+    return {
+      'store': _extractStore(text),
+      'date': _extractDate(text),
+      'total': _extractTotal(text),
+      'items': _extractItems(text),
+    };
+  }
+  
+  String _extractStore(String text) {
+    // Extract store name using regex or other techniques
+    return 'Unknown Store';
+  }
+  
+  String _extractDate(String text) {
+    // Extract date using regex
+    return 'Unknown Date';
+  }
+  
+  double _extractTotal(String text) {
+    // Extract total amount using regex
+    return 0.0;
+  }
+  
+  List<Map<String, dynamic>> _extractItems(String text) {
+    // Extract items and prices
+    return [];
+  }
+}
+```
+
+## TIER-BASED FEATURE IMPLEMENTATION
+
+### Free Tier (All Users)
+Implemented in core services with no Firebase dependency:
+
+1. **Local SQLite Backups**
+   - `backup_service.dart`: Use local storage for backups
+   - `local_db_service.dart`: Handle database operations
+
+2. **Offline P2P Sync**
+   - `p2p_sync_service.dart`: Implement real P2P sync
+   - `data_service.dart`: Handle sync operations
+
+3. **Core Features**
+   - Bills, tasks, votes
+   - Community Tree, Co-Living Credits
+   - Basic UI for all screens
+
+### Premium Tier (Owner-Admins)
+Implemented with Firebase/Supabase dependency:
+
+1. **Firebase Cloud Backup**
+   - Update `backup_service.dart` to check premium status:
+     ```dart
+     Future<void> backup() async {
+       final jsonData = await _dataService.exportData();
+       
+       // Local backup for all users
+       await _saveLocalBackup(jsonData);
+       
+       // Cloud backup for premium users
+       if (_isPremiumUser() && kUseFirebase) {
+         await _saveCloudBackup(jsonData);
+       }
+     }
+     ```
+
+2. **Analytics**
+   - Create `analytics_service.dart`:
+     ```dart
+     class AnalyticsService {
+       Future<Map<String, dynamic>> getVacancyTrends() async {
+         if (!_isPremiumUser()) return {};
+         // Premium analytics logic
+       }
+       
+       Future<Map<String, dynamic>> getPaymentBehavior() async {
+         if (!_isPremiumUser()) return {};
+         // Premium analytics logic
+       }
+     }
+     ```
+
+3. **User Profile Photos**
+   - Update `user_model.dart`:
+     ```dart
+     Future<void> uploadProfilePhoto(File photo) async {
+       if (!_isPremiumUser()) return;
+       // Upload to Firebase/Supabase Storage
+     }
+     ```
+
+4. **Public Vacancy Listings**
+   - Update `vacancy_management_model.dart`:
+     ```dart
+     Future<String?> generatePublicLink() async {
+       if (!_isPremiumUser()) return null;
+       // Generate and store public link
+     }
+     ```
+
+5. **Push Notifications**
+   - Update `notification_service.dart`:
+     ```dart
+     Future<void> sendNotification(String userId, String title, String body) async {
+       // Local notification for all users
+       await _sendLocalNotification(title, body);
+       
+       // Push notification for premium users
+       if (_isPremiumUser(userId) && kUseFirebase) {
+         await _sendPushNotification(userId, title, body);
+       }
+     }
+     ```
+
+### Premium Feature Check
+Add to `app_state_provider.dart`:
+```dart
+bool isPremiumUser(String userId) {
+  final user = _users.firstWhere((u) => u.id == userId, orElse: () => null);
+  if (user == null) return false;
+  
+  // Owner-Admin check
+  if (user.role == UserRole.ownerAdmin) return true;
+  
+  // Credit threshold check (alternative method)
+  if (user.credits >= kCreditsPremiumThreshold) return true;
+  
+  return false;
+}
+```
+
+## UI/UX CONSISTENCY IMPROVEMENTS
+
+1. **Consistent Card Design**
+   - Update `custom_widget.dart` with standardized card:
+     ```dart
+     class CustomCard extends StatelessWidget {
+       final Widget child;
+       final String? title;
+       final VoidCallback? onTap;
+       
+       // Implementation with consistent padding, elevation, etc.
+     }
+     ```
+
+2. **Color System**
+   - Update `theme.dart` with semantic color usage:
+     ```dart
+     // Primary: Main actions, buttons, key UI elements
+     // Secondary: Supporting actions, progress indicators
+     // Tertiary: Accent elements, highlights
+     // Surface: Card backgrounds
+     // Error: Error states
+     ```
+
+3. **Typography System**
+   - Consistent text styles across the app:
+     ```dart
+     // headlineSmall: Screen titles
+     // titleLarge: Card titles
+     // titleMedium: Section headers
+     // bodyLarge: Primary content
+     // bodyMedium: Secondary content
+     // labelMedium: Button text
+     ```
+
+4. **Animation System**
+   - Consistent animations with `flutter_animate`:
+     ```dart
+     // Fade in: New elements appearing
+     // Slide: Navigation transitions
+     // Scale: Emphasis on important elements
+     // All with consistent durations from kAnimationDuration
+     ```
+
+5. **Role-Based UI Adaptation**
+   - Update all screens with permission checks:
+     ```dart
+     Widget build(BuildContext context) {
+       final appState = Provider.of<AppStateProvider>(context);
+       final isAdmin = appState.currentUser?.isAdmin ?? false;
+       final isOwnerAdmin = appState.currentUser?.isOwnerAdmin ?? false;
+       
+       return Column(
+         children: [
+           // Common UI elements
+           
+           // Admin-only elements
+           if (isAdmin) AdminControls(),
+           
+           // Owner-admin only elements
+           if (isOwnerAdmin) PremiumFeatures(),
+         ],
+       );
+     }
+     ```
+
+## NEXT STEPS TO COMPLETE THE APP
+
+1. **Critical Path (1-2 weeks)**
+   - Fix P2P sync with real implementation using nearby_connections 4.3.0
+   - Complete role-based UI adaptation
+   - Enhance bill splitting logic
+
+2. **Core Features (2-3 weeks)**
+   - Complete Community Cooking functionality
+   - Finish Investment Groups implementation
+   - Enhance Vacancy Management
+
+3. **Premium Features (2-3 weeks)**
+   - Implement Firebase/Supabase integration
+   - Add cloud backups
+   - Implement analytics
+   - Add user photos and public listings
+   - Implement Google Vision OCR for receipt scanning
+
+4. **Polish & Testing (1-2 weeks)**
+   - UI/UX consistency improvements
+   - Performance optimization
+   - Testing with 30-40 users
+
+5. **Deployment (1 week)**
+   - App store preparation
+   - Build and release 

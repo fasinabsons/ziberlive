@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <g>
+    <!-- Tree trunk -->
+    <rect x="90" y="120" width="20" height="60" fill="#8B4513" />
+    
+    <!-- Tree foliage level 1 -->
+    <circle cx="100" cy="100" r="40" fill="#228B22" />
+    
+    <!-- Credits visualization -->
+    <circle cx="100" cy="100" r="5" fill="#FFD700" />
+  </g>
+</svg> 
