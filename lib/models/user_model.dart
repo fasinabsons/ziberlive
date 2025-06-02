@@ -1,108 +1,57 @@
-class User {
-  final String id;
-  String name;
-  UserRole role;
-  List<Subscription> subscriptions;
-  int credits;
-
-  User({
-    required this.id,
-    required this.name,
-    this.role = UserRole.user,
-    this.subscriptions = const [],
-    this.credits = 0,
-  });
-
-  // Create user from JSON map
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      name: json['name'],
-      role: UserRole.values.firstWhere(
-        (e) => e.toString() == json['role'],
-        orElse: () => UserRole.user,
-      ),
-      subscriptions: (json['subscriptions'] as List?)
-          ?.map((sub) => Subscription.fromJson(sub))
-          .toList() ?? [],
-      credits: json['credits'] ?? 0,
-    );
-  }
-
-  // Convert user to JSON map
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'role': role.toString(),
-      'subscriptions': subscriptions.map((sub) => sub.toJson()).toList(),
-      'credits': credits,
-    };
-  }
-
-  // Check if user has specific subscription
-  bool hasSubscription(SubscriptionType type) {
-    return subscriptions.any((sub) => sub.type == type && sub.isActive);
-  }
-
-  // Add credits
-  void addCredits(int amount) {
-    credits += amount;
-  }
-
-  // Is admin
-  bool get isAdmin => role == UserRole.roommateAdmin || role == UserRole.ownerAdmin;
-
-  // Is owner admin
-  bool get isOwnerAdmin => role == UserRole.ownerAdmin;
-}
-
-enum UserRole {
-  user,
-  roommateAdmin,
-  ownerAdmin,
-}
-
-class Subscription {
-  final String id;
+class AppUser {
+  final int? id; // Nullable for creation, non-null when fetched from DB
   final String name;
-  final SubscriptionType type;
-  bool isActive;
+  final String? bed;
+  final String role; // e.g., 'Roommate-Admin', 'Roommate'
+  final int trustScore;
+  final int coins;
 
-  Subscription({
-    required this.id,
+  AppUser({
+    this.id,
     required this.name,
-    required this.type,
-    this.isActive = true,
+    this.bed,
+    required this.role,
+    this.trustScore = 0,
+    this.coins = 0,
   });
 
-  // Create subscription from JSON map
-  factory Subscription.fromJson(Map<String, dynamic> json) {
-    return Subscription(
-      id: json['id'],
-      name: json['name'],
-      type: SubscriptionType.values.firstWhere(
-        (e) => e.toString() == json['type'],
-        orElse: () => SubscriptionType.rent,
-      ),
-      isActive: json['isActive'] ?? true,
-    );
-  }
-
-  // Convert subscription to JSON map
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'type': type.toString(),
-      'isActive': isActive,
+      'bed': bed,
+      'role': role,
+      'trust_score': trustScore,
+      'coins': coins,
     };
   }
-}
 
-enum SubscriptionType {
-  communityMeals,
-  drinkingWater,
-  rent,
-  utilities,
+  factory AppUser.fromMap(Map<String, dynamic> map) {
+    return AppUser(
+      id: map['id'] as int?,
+      name: map['name'] as String,
+      bed: map['bed'] as String?,
+      role: map['role'] as String,
+      trustScore: map['trust_score'] as int? ?? 0,
+      coins: map['coins'] as int? ?? 0,
+    );
+  }
+
+  AppUser copyWith({
+    int? id,
+    String? name,
+    String? bed,
+    String? role,
+    int? trustScore,
+    int? coins,
+  }) {
+    return AppUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      bed: bed ?? this.bed,
+      role: role ?? this.role,
+      trustScore: trustScore ?? this.trustScore,
+      coins: coins ?? this.coins,
+    );
+  }
 }
