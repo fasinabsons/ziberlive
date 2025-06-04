@@ -17,6 +17,8 @@ class AppUser {
   final DateTime? subscriptionExpiryDate;
   final bool isFreeTrialActive;
   final DateTime? freeTrialExpiryDate;
+  final DateTime lastModified;
+  final bool isDeviceLost; // New field
 
   AppUser({
     this.id,
@@ -35,7 +37,9 @@ class AppUser {
     this.subscriptionExpiryDate,
     this.isFreeTrialActive = false,
     this.freeTrialExpiryDate,
-  });
+    DateTime? lastModified,
+    this.isDeviceLost = false, // Default to false
+  }) : lastModified = lastModified ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -53,8 +57,10 @@ class AppUser {
       // Add subscription fields to map
       'active_subscription_id': activeSubscriptionId,
       'subscription_expiry_date': subscriptionExpiryDate?.toIso8601String(),
-      'is_free_trial_active': isFreeTrialActive ? 1 : 0, // Store bool as int
+      'is_free_trial_active': isFreeTrialActive ? 1 : 0,
       'free_trial_expiry_date': freeTrialExpiryDate?.toIso8601String(),
+      'last_modified': lastModified.toIso8601String(),
+      'is_device_lost': isDeviceLost ? 1 : 0, // Add to map
     };
   }
 
@@ -71,11 +77,12 @@ class AppUser {
       amazonCouponPoints: map['amazon_coupon_points'] as int? ?? 0,
       payPalPoints: map['paypal_points'] as int? ?? 0,
       ownedTreeSkins: (map['owned_tree_skins'] as String?)?.split(',').where((s) => s.isNotEmpty).toList() ?? [],
-      // Parse subscription fields from map
       activeSubscriptionId: map['active_subscription_id'] as String?,
       subscriptionExpiryDate: map['subscription_expiry_date'] != null ? DateTime.tryParse(map['subscription_expiry_date']) : null,
-      isFreeTrialActive: (map['is_free_trial_active'] as int? ?? 0) == 1, // Parse int to bool
+      isFreeTrialActive: (map['is_free_trial_active'] as int? ?? 0) == 1,
       freeTrialExpiryDate: map['free_trial_expiry_date'] != null ? DateTime.tryParse(map['free_trial_expiry_date']) : null,
+      lastModified: map['last_modified'] != null ? DateTime.parse(map['last_modified']) : DateTime.now(),
+      isDeviceLost: (map['is_device_lost'] as int? ?? 0) == 1, // Parse from map
     );
   }
 
@@ -95,6 +102,8 @@ class AppUser {
     DateTime? subscriptionExpiryDate,
     bool? isFreeTrialActive,
     DateTime? freeTrialExpiryDate,
+    DateTime? lastModified,
+    bool? isDeviceLost,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -112,6 +121,8 @@ class AppUser {
       subscriptionExpiryDate: subscriptionExpiryDate ?? this.subscriptionExpiryDate,
       isFreeTrialActive: isFreeTrialActive ?? this.isFreeTrialActive,
       freeTrialExpiryDate: freeTrialExpiryDate ?? this.freeTrialExpiryDate,
+      lastModified: lastModified ?? this.lastModified,
+      isDeviceLost: isDeviceLost ?? this.isDeviceLost,
     );
   }
 }

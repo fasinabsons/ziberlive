@@ -74,6 +74,8 @@ class User {
   DateTime? subscriptionExpiryDate;
   bool isFreeTrialActive;
   DateTime? freeTrialExpiryDate;
+  DateTime lastModified;
+  bool isDeviceLost; // New field
 
   User({
     required this.id,
@@ -98,7 +100,9 @@ class User {
     this.subscriptionExpiryDate,
     this.isFreeTrialActive = false,
     this.freeTrialExpiryDate,
-  });
+    DateTime? lastModified,
+    this.isDeviceLost = false, // Default to false
+  }) : lastModified = lastModified ?? DateTime.now();
 
   bool get isAdmin => role == UserRole.ownerAdmin || role == UserRole.roommateAdmin;
   bool get isOwnerAdmin => role == UserRole.ownerAdmin;
@@ -141,6 +145,8 @@ class User {
       'subscriptionExpiryDate': subscriptionExpiryDate?.toIso8601String(),
       'isFreeTrialActive': isFreeTrialActive,
       'freeTrialExpiryDate': freeTrialExpiryDate?.toIso8601String(),
+      'lastModified': lastModified.toIso8601String(),
+      'isDeviceLost': isDeviceLost, // Add to JSON
     };
   }
 
@@ -164,11 +170,12 @@ class User {
       amazonCouponPoints: json['amazonCouponPoints'] as int? ?? 0,
       payPalPoints: json['payPalPoints'] as int? ?? 0,
       ownedTreeSkins: json['ownedTreeSkins'] != null ? List<String>.from(json['ownedTreeSkins']) : [],
-      // Parse subscription fields from JSON
       activeSubscriptionId: json['activeSubscriptionId'] as String?,
       subscriptionExpiryDate: json['subscriptionExpiryDate'] != null ? DateTime.tryParse(json['subscriptionExpiryDate']) : null,
       isFreeTrialActive: json['isFreeTrialActive'] as bool? ?? false,
       freeTrialExpiryDate: json['freeTrialExpiryDate'] != null ? DateTime.tryParse(json['freeTrialExpiryDate']) : null,
+      lastModified: json['lastModified'] != null ? DateTime.parse(json['lastModified']) : DateTime.now(),
+      isDeviceLost: json['isDeviceLost'] as bool? ?? false, // Parse from JSON
     );
   }
 
@@ -194,6 +201,8 @@ class User {
     DateTime? subscriptionExpiryDate,
     bool? isFreeTrialActive,
     DateTime? freeTrialExpiryDate,
+    DateTime? lastModified,
+    bool? isDeviceLost,
   }) {
     return User(
       id: id ?? this.id,
@@ -216,6 +225,8 @@ class User {
       subscriptionExpiryDate: subscriptionExpiryDate ?? this.subscriptionExpiryDate,
       isFreeTrialActive: isFreeTrialActive ?? this.isFreeTrialActive,
       freeTrialExpiryDate: freeTrialExpiryDate ?? this.freeTrialExpiryDate,
+      lastModified: lastModified ?? this.lastModified,
+      isDeviceLost: isDeviceLost ?? this.isDeviceLost,
     );
   }
 
@@ -417,6 +428,7 @@ class Vote {
   final DateTime deadline;
   Map<String, String> userVotes; // userId -> optionId
   final bool isAnonymous;
+  DateTime lastModified; // New field
 
   Vote({
     required this.id,
@@ -426,7 +438,8 @@ class Vote {
     required this.deadline,
     required this.userVotes,
     required this.isAnonymous,
-  });
+    DateTime? lastModified,
+  }) : lastModified = lastModified ?? DateTime.now();
 
   bool isVotingOpen() => DateTime.now().isBefore(deadline);
 
@@ -484,6 +497,7 @@ class Vote {
       'deadline': deadline.toIso8601String(),
       'userVotes': userVotes,
       'isAnonymous': isAnonymous,
+      'lastModified': lastModified.toIso8601String(), // Add to JSON
     };
   }
 
@@ -498,6 +512,7 @@ class Vote {
       deadline: DateTime.parse(json['deadline']),
       userVotes: Map<String, String>.from(json['userVotes']),
       isAnonymous: json['isAnonymous'],
+      lastModified: json['lastModified'] != null ? DateTime.parse(json['lastModified']) : DateTime.now(), // Parse from JSON
     );
   }
 }

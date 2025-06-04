@@ -7,6 +7,8 @@ import 'package:ziberlive/config.dart'; // Import config for kSettingsAdsDailyCa
 import 'amazon_coupons_screen.dart'; // Import the new AmazonCouponsScreen
 import 'paypal_rewards_screen.dart'; // Import the new PayPalRewardsScreen
 import 'income_pool_screen.dart'; // Import the new IncomePoolScreen
+import 'qr_sync_screen.dart'; // Import the new QrSyncScreen
+import 'sync_button_style_screen.dart'; // Import the new SyncButtonStyleScreen
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -323,8 +325,124 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.qr_code_scanner_rounded),
+              title: const Text('Manual Sync / QR Code'),
+              subtitle: const Text('Initiate P2P sync using QR codes'),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const QrSyncScreen()),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.timer_rounded),
+              title: const Text('Automatic Sync Interval'),
+              subtitle: Text(appState.currentSyncIntervalLabel), // Assuming getter in AppStateProvider
+              onTap: () => _showSyncIntervalDialog(context, appState),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.settings_ethernet_rounded),
+              title: const Text('Preferred Sync Technology'),
+              subtitle: Text(appState.currentSyncMethodPriorityLabel), // Assuming getter
+              onTap: () => _showSyncMethodPriorityDialog(context, appState),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.palette_rounded),
+              title: const Text('Customize Sync Button Style'),
+              subtitle: const Text('Change color and icon of the manual sync button'),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SyncButtonStyleScreen()),
+                );
+              },
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  void _showSyncIntervalDialog(BuildContext context, AppStateProvider appState) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Select Sync Interval'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: SyncIntervalOption.values.map((option) {
+              return RadioListTile<SyncIntervalOption>(
+                title: Text(kSyncIntervalLabels[option] ?? option.toString()),
+                value: option,
+                groupValue: appState.selectedSyncInterval, // Assuming getter
+                onChanged: (SyncIntervalOption? value) {
+                  if (value != null) {
+                    appState.setSelectedSyncInterval(value);
+                  }
+                  Navigator.of(dialogContext).pop();
+                },
+              );
+            }).toList(),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSyncMethodPriorityDialog(BuildContext context, AppStateProvider appState) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Select Preferred Sync Technology'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: SyncMethodPriority.values.map((option) {
+              return RadioListTile<SyncMethodPriority>(
+                title: Text(kSyncMethodPriorityLabels[option] ?? option.toString()),
+                value: option,
+                groupValue: appState.selectedSyncMethodPriority, // Assuming getter
+                onChanged: (SyncMethodPriority? value) {
+                  if (value != null) {
+                    appState.setSelectedSyncMethodPriority(value);
+                  }
+                  Navigator.of(dialogContext).pop();
+                },
+              );
+            }).toList(),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -168,7 +168,12 @@ class AppStateProvider extends ChangeNotifier {
   int _currentUserWeeklyIncomePoolContribution = 0;
   String _lastIncomePoolContributionResetDate = ""; // Stores YYYY-WW (Year-WeekOfYear) format
   static const String _prefsWeeklyContributionKey = 'currentUserWeeklyIncomePoolContribution';
-  static const String _prefsLastContributionResetDateKey = 'lastIncomePoolContributionResetDateKey'; // Corrected Key Name
+  static const String _prefsLastContributionResetDateKey = 'lastIncomePoolContributionResetDateKey';
+
+  // Sync Status
+  DateTime? _lastSuccessfulSyncTime;
+  static const String _prefsLastSyncTimeKey = 'lastSuccessfulSyncTime';
+  // _isSyncing (bool) already exists and is used as appState.isSyncing
 
 
   // Calculated total from all users' current incomePoolPoints (for display if needed, but not for redemption)
@@ -227,7 +232,7 @@ class AppStateProvider extends ChangeNotifier {
 
     // Show first rewarded ad
     print("AppStateProvider: Attempting to show first rewarded ad for sync.");
-    _adsService.showRewardedAd();
+    _adsService.showRewardedAd(rewardContext: "SyncAd");
     // In a real scenario, you'd await a Future from showRewardedAd that completes upon ad dismissal/reward.
     // For simplicity here, we'll just call it. The UI will be blocked by the ad.
     // A small delay to simulate ad watching, or rely on ad SDK's own modal behavior.
@@ -235,7 +240,7 @@ class AppStateProvider extends ChangeNotifier {
 
     // Show second rewarded ad
     print("AppStateProvider: Attempting to show second rewarded ad for sync.");
-    _adsService.showRewardedAd();
+    _adsService.showRewardedAd(rewardContext: "SyncAd");
     await Future.delayed(const Duration(seconds: 1)); // Small delay
 
 

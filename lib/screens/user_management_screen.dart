@@ -168,7 +168,16 @@ class _UserListItem extends StatelessWidget {
             onPressed: () => _showEditUserDialog(context, user),
             tooltip: 'Edit user',
           ),
-          if (user.id != appState.currentUser?.id)
+          if (appState.currentUser?.isAdmin ?? false) // Only admins can mark device as lost
+            IconButton(
+              icon: Icon(
+                user.isDeviceLost ? Icons.phonelink_erase_rounded : Icons.phonelink_lock_rounded,
+                color: user.isDeviceLost ? Colors.orange : Colors.grey,
+              ),
+              onPressed: () => _confirmToggleDeviceLost(context, appState, user),
+              tooltip: user.isDeviceLost ? 'Mark Device as Found' : 'Mark Device as Lost',
+            ),
+          if (user.id != appState.currentUser?.id && (appState.currentUser?.isAdmin ?? false))
             IconButton(
               icon: const Icon(Icons.delete_rounded, color: Colors.red),
               onPressed: () => _confirmDeleteUser(context, user),

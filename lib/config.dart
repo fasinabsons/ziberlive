@@ -228,3 +228,74 @@ const List<SubscriptionPlan> kSubscriptionPlans = [
 ];
 
 const Duration kFreeTrialDuration = Duration(days: 7);
+
+// --- Sync Interval Settings ---
+enum SyncIntervalOption { manual, every15Minutes, everyHour, every4Hours }
+
+const Map<SyncIntervalOption, Duration> kSyncIntervalDurations = {
+  SyncIntervalOption.manual: Duration.zero, // Or a special marker like Duration(days: 999)
+  SyncIntervalOption.every15Minutes: Duration(minutes: 15),
+  SyncIntervalOption.everyHour: Duration(hours: 1),
+  SyncIntervalOption.every4Hours: Duration(hours: 4),
+};
+
+const Map<SyncIntervalOption, String> kSyncIntervalLabels = {
+  SyncIntervalOption.manual: "Manual Only",
+  SyncIntervalOption.every15Minutes: "Every 15 minutes",
+  SyncIntervalOption.everyHour: "Every hour",
+  SyncIntervalOption.every4Hours: "Every 4 hours",
+};
+
+const String kPrefsSyncIntervalKey = 'syncIntervalPreference';
+
+// --- Sync Method Priority Settings ---
+enum SyncMethodPriority { wifiPreferred, bluetoothPreferred, systemChoice }
+
+const Map<SyncMethodPriority, String> kSyncMethodPriorityLabels = {
+  SyncMethodPriority.wifiPreferred: "Prefer Wi-Fi Direct / LAN",
+  SyncMethodPriority.bluetoothPreferred: "Prefer Bluetooth",
+  SyncMethodPriority.systemChoice: "Let System Decide",
+};
+
+const String kPrefsSyncMethodPriorityKey = 'syncMethodPriorityPreference';
+
+// --- Sync Button Style Customization ---
+const String kPrefsSyncButtonColorKey = 'syncButtonColorPreference';
+const String kPrefsSyncButtonIconKey = 'syncButtonIconPreference';
+
+// Define some color options (could be more extensive or a color picker)
+// Storing ARGB value as int.
+const Map<String, int> kSyncButtonColorOptions = {
+  "Teal (Default)": 0xFF008080, // Colors.teal.value
+  "Blue": 0xFF2196F3,       // Colors.blue.value
+  "Green": 0xFF4CAF50,      // Colors.green.value
+  "Orange": 0xFFFF9800,     // Colors.orange.value
+};
+
+// Define some icon options (using codepoints)
+// Ensure these icons are available (e.g., MaterialIcons)
+const Map<String, int> kSyncButtonIconOptions = {
+  "Sync (Default)": 0xe627, // Icons.sync_rounded.codePoint
+  "Refresh": 0xe514,      // Icons.refresh_rounded.codePoint
+  "Loop": 0xe3ループ,        // Icons.loop_rounded.codePoint (Note: '루프' is Korean, likely a typo for loop's codepoint, using placeholder)
+                                // Corrected: Icons.loop.codepoint is 0xe3a5
+  "Cloud Sync": 0xe2c8,   // Icons.cloud_sync_rounded.codePoint
+};
+// Placeholder for loop icon if the above was a typo and meant to be a standard material icon
+// const int kLoopIconCodePoint = 0xe3a5; // Actual Icons.loop.codePoint
+
+// --- Backup Schedule Settings ---
+enum BackupScheduleOption { manual, daily, weekly }
+const Map<BackupScheduleOption, String> kBackupScheduleLabels = {
+  BackupScheduleOption.manual: "Manual Only",
+  BackupScheduleOption.daily: "Daily (Automatic)",
+  BackupScheduleOption.weekly: "Weekly (Automatic)",
+};
+const String kPrefsBackupScheduleKey = 'backupSchedulePreference';
+
+// --- Backup Scope Settings ---
+enum BackupScopeOption { full } // Simplified for now
+const Map<BackupScopeOption, String> kBackupScopeLabels = {
+  BackupScopeOption.full: "Full Backup (Recommended)",
+};
+const String kPrefsBackupScopeKey = 'backupScopePreference';
