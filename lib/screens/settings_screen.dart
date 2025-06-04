@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import 'premium_features_screen.dart';
 import 'bulk_import_export_screen.dart';
+import 'admin/bed_type_management_screen.dart';
+import 'admin/apartment_management_screen.dart'; // Import ApartmentManagementScreen
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -226,6 +228,48 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+
+          // Conditional BedType Management Tile
+          if (user != null && (user.role == 'Owner-Admin' || user.role == 'Roommate-Admin'))
+            Column(
+              children: [
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.king_bed_outlined),
+                    title: const Text('Manage Bed Types'),
+                    subtitle: const Text('Define and edit bed categories'),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const BedTypeManagementScreen()),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+          // Conditional Apartment Management Tile
+          if (user != null && (user.role == 'Owner-Admin' || user.role == 'Roommate-Admin'))
+            Column(
+              children: [
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.apartment_outlined),
+                    title: const Text('Manage Apartments & Rooms'),
+                    subtitle: const Text('Define apartments and their rooms'),
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const ApartmentManagementScreen()),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

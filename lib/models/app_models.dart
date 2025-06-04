@@ -48,92 +48,6 @@ class Subscription {
   }
 }
 
-// User model
-class User {
-  final String id;
-  final String name;
-  final String email;
-  final String profileImageUrl;
-  int credits;
-  final UserRole role;
-  final String deviceId;
-  final String? relationship; // For relatives/acquaintances
-  final bool? needsToPayRent; // Whether guest needs to pay rent
-  final List<Subscription> subscriptions;
-
-  User({
-    required this.id,
-    required this.name,
-    this.email = '',
-    this.profileImageUrl = '',
-    required this.credits,
-    required this.role,
-    this.deviceId = '',
-    this.relationship,
-    this.needsToPayRent,
-    this.subscriptions = const [],
-  });
-
-  bool get isAdmin => role == UserRole.ownerAdmin || role == UserRole.roommateAdmin;
-  bool get isOwnerAdmin => role == UserRole.ownerAdmin;
-  bool get isRoommateAdmin => role == UserRole.roommateAdmin;
-  
-  bool hasSubscription(SubscriptionType type) {
-    return subscriptions.any((sub) => sub.type == type && sub.isActive);
-  }
-  
-  void addCredits(int amount) {
-    credits += amount;
-  }
-  
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'profileImageUrl': profileImageUrl,
-      'credits': credits,
-      'role': role.toString(),
-      'deviceId': deviceId,
-      'relationship': relationship,
-      'needsToPayRent': needsToPayRent ?? true,
-      'subscriptions': subscriptions.map((sub) => sub.toJson()).toList(),
-    };
-  }
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      name: json['name'],
-      email: json['email'] ?? '',
-      profileImageUrl: json['profileImageUrl'] ?? '',
-      credits: json['credits'],
-      role: _parseUserRole(json['role']),
-      deviceId: json['deviceId'] ?? '',
-      relationship: json['relationship'],
-      needsToPayRent: json['needsToPayRent'] ?? true,
-      subscriptions: json['subscriptions'] != null
-          ? (json['subscriptions'] as List).map((e) => Subscription.fromJson(e)).toList()
-          : [],
-    );
-  }
-
-  static UserRole _parseUserRole(String role) {
-    if (role.contains('ownerAdmin')) return UserRole.ownerAdmin;
-    if (role.contains('roommateAdmin')) return UserRole.roommateAdmin;
-    if (role.contains('user')) return UserRole.user;
-    return UserRole.guest;
-  }
-}
-
-// User Role enum
-enum UserRole {
-  guest,
-  user,
-  roommateAdmin,
-  ownerAdmin,
-}
-
 // Bill Type enum
 enum BillType {
   rent,
@@ -464,13 +378,13 @@ class Apartment {
 class Room {
   final String id;
   final String name;
-  final bool isVacant;
+  final String apartmentId;
   final List<Bed> beds;
 
-  const Room({
+  Room({
     required this.id,
     required this.name,
-    required this.isVacant,
+    required this.apartmentId,
     required this.beds,
   });
   
@@ -478,7 +392,7 @@ class Room {
     return {
       'id': id,
       'name': name,
-      'isVacant': isVacant,
+      'apartmentId': apartmentId,
       'beds': beds.map((bed) => bed.toJson()).toList(),
     };
   }
@@ -487,7 +401,7 @@ class Room {
     return Room(
       id: json['id'],
       name: json['name'],
-      isVacant: json['isVacant'] ?? true,
+      apartmentId: json['apartmentId'],
       beds: json['beds'] != null
           ? (json['beds'] as List).map((e) => Bed.fromJson(e)).toList()
           : [],
@@ -498,22 +412,25 @@ class Room {
 class Bed {
   final String id;
   final String name;
-  final bool isVacant;
-  final User? user;
+  final String roomId;
+  final String bedTypeName; // Links to BedType model's typeName
+  bool isVacant; // May be derived later from AppUser.assignedBedId
 
-  const Bed({
+  Bed({
     required this.id,
     required this.name,
-    required this.isVacant,
-    this.user,
+    required this.roomId,
+    required this.bedTypeName,
+    this.isVacant = true,
   });
   
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
+      'roomId': roomId,
+      'bedTypeName': bedTypeName,
       'isVacant': isVacant,
-      'user': user?.toJson(),
     };
   }
 
@@ -521,8 +438,9 @@ class Bed {
     return Bed(
       id: json['id'],
       name: json['name'],
+      roomId: json['roomId'],
+      bedTypeName: json['bedTypeName'],
       isVacant: json['isVacant'] ?? true,
-      user: json['user'] != null ? User.fromJson(json['user']) : null,
     );
   }
 }
