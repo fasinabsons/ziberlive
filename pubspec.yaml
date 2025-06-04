@@ -15,7 +15,9 @@ dependencies:
   # Core Functionalities
   sqflite: ^2.3.0 # Example version, replace with latest if known
   nearby_connections: ^1.1.0 # Example version
-  admob_flutter: ^3.0.0 # Example version
+  # Replaced admob_flutter with google_mobile_ads and added flutter_unity_ads
+  google_mobile_ads: ^5.1.0 # Official Google Mobile Ads plugin
+  flutter_unity_ads: ^2.2.0 # Example version for Unity Ads
   flutter_local_notifications: ^16.3.0 # Example version
   path_provider: ^2.1.1 # Example version
   encrypt: ^5.0.3 # Example version

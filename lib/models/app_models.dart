@@ -61,6 +61,22 @@ class User {
   final bool? needsToPayRent; // Whether guest needs to pay rent
   final List<Subscription> subscriptions;
 
+  // New reward fields mirroring AppUser
+  int trustScore;
+  int communityTreePoints;
+  int incomePoolPoints;
+  int amazonCouponPoints;
+  int payPalPoints;
+  List<String> ownedTreeSkins;
+
+  // Subscription fields
+  String? activeSubscriptionId;
+  DateTime? subscriptionExpiryDate;
+  bool isFreeTrialActive;
+  DateTime? freeTrialExpiryDate;
+  DateTime lastModified;
+  bool isDeviceLost; // New field
+
   User({
     required this.id,
     required this.name,
@@ -72,7 +88,21 @@ class User {
     this.relationship,
     this.needsToPayRent,
     this.subscriptions = const [],
-  });
+    // Initialize new fields
+    this.trustScore = 0,
+    this.communityTreePoints = 0,
+    this.incomePoolPoints = 0,
+    this.amazonCouponPoints = 0,
+    this.payPalPoints = 0,
+    this.ownedTreeSkins = const [],
+    // Initialize subscription fields
+    this.activeSubscriptionId,
+    this.subscriptionExpiryDate,
+    this.isFreeTrialActive = false,
+    this.freeTrialExpiryDate,
+    DateTime? lastModified,
+    this.isDeviceLost = false, // Default to false
+  }) : lastModified = lastModified ?? DateTime.now();
 
   bool get isAdmin => role == UserRole.ownerAdmin || role == UserRole.roommateAdmin;
   bool get isOwnerAdmin => role == UserRole.ownerAdmin;
@@ -84,6 +114,11 @@ class User {
   
   void addCredits(int amount) {
     credits += amount;
+  }
+
+  // It might be good to have specific methods to add other points too, or handle in provider
+  void addTrustScore(int amount) {
+    trustScore += amount;
   }
   
   Map<String, dynamic> toJson() {
@@ -98,6 +133,20 @@ class User {
       'relationship': relationship,
       'needsToPayRent': needsToPayRent ?? true,
       'subscriptions': subscriptions.map((sub) => sub.toJson()).toList(),
+      // Add new fields to JSON
+      'trustScore': trustScore,
+      'communityTreePoints': communityTreePoints,
+      'incomePoolPoints': incomePoolPoints,
+      'amazonCouponPoints': amazonCouponPoints,
+      'payPalPoints': payPalPoints,
+      'ownedTreeSkins': ownedTreeSkins,
+      // Add subscription fields to JSON
+      'activeSubscriptionId': activeSubscriptionId,
+      'subscriptionExpiryDate': subscriptionExpiryDate?.toIso8601String(),
+      'isFreeTrialActive': isFreeTrialActive,
+      'freeTrialExpiryDate': freeTrialExpiryDate?.toIso8601String(),
+      'lastModified': lastModified.toIso8601String(),
+      'isDeviceLost': isDeviceLost, // Add to JSON
     };
   }
 
@@ -107,7 +156,7 @@ class User {
       name: json['name'],
       email: json['email'] ?? '',
       profileImageUrl: json['profileImageUrl'] ?? '',
-      credits: json['credits'],
+      credits: json['credits'] ?? 0,
       role: _parseUserRole(json['role']),
       deviceId: json['deviceId'] ?? '',
       relationship: json['relationship'],
@@ -115,6 +164,69 @@ class User {
       subscriptions: json['subscriptions'] != null
           ? (json['subscriptions'] as List).map((e) => Subscription.fromJson(e)).toList()
           : [],
+      trustScore: json['trustScore'] as int? ?? 0,
+      communityTreePoints: json['communityTreePoints'] as int? ?? 0,
+      incomePoolPoints: json['incomePoolPoints'] as int? ?? 0,
+      amazonCouponPoints: json['amazonCouponPoints'] as int? ?? 0,
+      payPalPoints: json['payPalPoints'] as int? ?? 0,
+      ownedTreeSkins: json['ownedTreeSkins'] != null ? List<String>.from(json['ownedTreeSkins']) : [],
+      activeSubscriptionId: json['activeSubscriptionId'] as String?,
+      subscriptionExpiryDate: json['subscriptionExpiryDate'] != null ? DateTime.tryParse(json['subscriptionExpiryDate']) : null,
+      isFreeTrialActive: json['isFreeTrialActive'] as bool? ?? false,
+      freeTrialExpiryDate: json['freeTrialExpiryDate'] != null ? DateTime.tryParse(json['freeTrialExpiryDate']) : null,
+      lastModified: json['lastModified'] != null ? DateTime.parse(json['lastModified']) : DateTime.now(),
+      isDeviceLost: json['isDeviceLost'] as bool? ?? false, // Parse from JSON
+    );
+  }
+
+  // copyWith method for easier updates
+  User copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? profileImageUrl,
+    int? credits,
+    UserRole? role,
+    String? deviceId,
+    String? relationship,
+    bool? needsToPayRent,
+    List<Subscription>? subscriptions,
+    int? trustScore,
+    int? communityTreePoints,
+    int? incomePoolPoints,
+    int? amazonCouponPoints,
+    int? payPalPoints,
+    List<String>? ownedTreeSkins,
+    String? activeSubscriptionId,
+    DateTime? subscriptionExpiryDate,
+    bool? isFreeTrialActive,
+    DateTime? freeTrialExpiryDate,
+    DateTime? lastModified,
+    bool? isDeviceLost,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      credits: credits ?? this.credits,
+      role: role ?? this.role,
+      deviceId: deviceId ?? this.deviceId,
+      relationship: relationship ?? this.relationship,
+      needsToPayRent: needsToPayRent ?? this.needsToPayRent,
+      subscriptions: subscriptions ?? this.subscriptions,
+      trustScore: trustScore ?? this.trustScore,
+      communityTreePoints: communityTreePoints ?? this.communityTreePoints,
+      incomePoolPoints: incomePoolPoints ?? this.incomePoolPoints,
+      amazonCouponPoints: amazonCouponPoints ?? this.amazonCouponPoints,
+      payPalPoints: payPalPoints ?? this.payPalPoints,
+      ownedTreeSkins: ownedTreeSkins ?? this.ownedTreeSkins,
+      activeSubscriptionId: activeSubscriptionId ?? this.activeSubscriptionId,
+      subscriptionExpiryDate: subscriptionExpiryDate ?? this.subscriptionExpiryDate,
+      isFreeTrialActive: isFreeTrialActive ?? this.isFreeTrialActive,
+      freeTrialExpiryDate: freeTrialExpiryDate ?? this.freeTrialExpiryDate,
+      lastModified: lastModified ?? this.lastModified,
+      isDeviceLost: isDeviceLost ?? this.isDeviceLost,
     );
   }
 
@@ -316,6 +428,7 @@ class Vote {
   final DateTime deadline;
   Map<String, String> userVotes; // userId -> optionId
   final bool isAnonymous;
+  DateTime lastModified; // New field
 
   Vote({
     required this.id,
@@ -325,7 +438,8 @@ class Vote {
     required this.deadline,
     required this.userVotes,
     required this.isAnonymous,
-  });
+    DateTime? lastModified,
+  }) : lastModified = lastModified ?? DateTime.now();
 
   bool isVotingOpen() => DateTime.now().isBefore(deadline);
 
@@ -383,6 +497,7 @@ class Vote {
       'deadline': deadline.toIso8601String(),
       'userVotes': userVotes,
       'isAnonymous': isAnonymous,
+      'lastModified': lastModified.toIso8601String(), // Add to JSON
     };
   }
 
@@ -397,6 +512,7 @@ class Vote {
       deadline: DateTime.parse(json['deadline']),
       userVotes: Map<String, String>.from(json['userVotes']),
       isAnonymous: json['isAnonymous'],
+      lastModified: json['lastModified'] != null ? DateTime.parse(json['lastModified']) : DateTime.now(), // Parse from JSON
     );
   }
 }

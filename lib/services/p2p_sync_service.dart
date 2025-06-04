@@ -458,21 +458,41 @@ class P2PSyncService {
         if (remoteIsAdmin && !isAdmin) {
           merged[key] = value;
         } else {
-          // Get timestamps if available
-          int localTimestamp = 0;
-          int remoteItemTimestamp = 0;
-
-          if (merged[key] is Map && merged[key].containsKey('timestamp')) {
-            localTimestamp = merged[key]['timestamp'];
-          }
-
-          if (value is Map && value.containsKey('timestamp')) {
-            remoteItemTimestamp = value['timestamp'];
-          }
-
-          // Use the most recent value
-          if (remoteItemTimestamp > localTimestamp) {
-            merged[key] = value;
+          // Get item-level timestamps if available from 'lastModified' field
+          // The value from remote could be a primitive, a map, or a list.
+          // This specific 'else' block in _resolveConflicts is for when merged[key] is not a Map or List,
+          // or 'value' is not of the same type.
+          // We should prioritize based on remoteMeta.timestamp (payload timestamp) for direct field overwrites at this level,
+          // unless the items themselves are timestamped objects not fitting map/list merge.
+          // For direct replacement of a top-level key (e.g. globalTreePoints object)
+          if (value is Map && value.containsKey('lastModified') && merged[key] is Map && (merged[key] as Map).containsKey('lastModified')) {
+            try {
+              DateTime remoteItemLastModified = DateTime.parse(value['lastModified']);
+              DateTime localItemLastModified = DateTime.parse((merged[key] as Map)['lastModified']);
+              if (remoteItemLastModified.isAfter(localItemLastModified)) {
+                merged[key] = value;
+              } else if (remoteItemLastModified.isAtSameMomentAs(localItemLastModified) && remoteIsAdmin && !isAdmin) {
+                // If timestamps are same, admin data takes precedence
+                merged[key] = value;
+              }
+            } catch (e) {
+              logger.w("Error parsing lastModified for key $key, falling back to payload timestamp: $e");
+              // Fallback to payload timestamp if item 'lastModified' is missing or malformed
+              if (remoteTimestamp > (localData['_meta']?['timestamp'] ?? 0) ) { // Compare with local payload timestamp
+                 merged[key] = value;
+              }
+            }
+          } else {
+            // Fallback for primitives or if one doesn't have lastModified: use payload timestamp or admin priority
+            // This part of the logic might need to be re-evaluated based on how often non-map/non-list items are top-level.
+            // For now, assume top-level items that are not lists/maps and need merging are maps with lastModified (like global stats).
+            // If 'value' is a primitive, it's just replaced if remote payload is newer or admin.
+             int localPayloadTimestamp = localData['_meta']?['timestamp'] ?? 0; // Assuming localData also has _meta from previous syncs
+             if (remoteIsAdmin && !isAdmin) {
+                merged[key] = value;
+             } else if (remoteTimestamp > localPayloadTimestamp) {
+                merged[key] = value;
+            }
           }
         }
       }
@@ -481,30 +501,75 @@ class P2PSyncService {
     return merged;
   }
 
+  Map<String, dynamic> _parseDateTimeFields(Map<String, dynamic> item) {
+    // Helper to ensure 'lastModified' (and other date fields) are DateTime objects for comparison
+    // This is more relevant if the maps are not yet fully typed objects.
+    // However, our models' fromJson should handle this. This is a safeguard.
+    if (item.containsKey('lastModified') && item['lastModified'] is String) {
+      try {
+        item['lastModified_dt'] = DateTime.parse(item['lastModified']);
+      } catch (_) {} // Ignore if parsing fails
+    }
+    return item;
+  }
+
+  DateTime _getItemTimestamp(Map<String, dynamic> item, {DateTime? defaultTimestamp}) {
+    if (item.containsKey('lastModified') && item['lastModified'] != null) {
+      try {
+        return DateTime.parse(item['lastModified'] as String);
+      } catch (e) {
+        logger.w("Could not parse 'lastModified' string: ${item['lastModified']}. Error: $e");
+      }
+    }
+    return defaultTimestamp ?? DateTime.fromMillisecondsSinceEpoch(0); // Very old date if no timestamp
+  }
+
+
   Map<String, dynamic> _mergeNestedMaps(Map<String, dynamic> local,
-      Map<String, dynamic> remote, int remoteTimestamp, bool remoteIsAdmin) {
+      Map<String, dynamic> remote, DateTime remotePayloadTimestamp, bool remoteIsAdmin) {
     Map<String, dynamic> result = Map<String, dynamic>.from(local);
 
     remote.forEach((key, value) {
       if (!result.containsKey(key)) {
         result[key] = value;
       } else if (value is Map && result[key] is Map) {
-        result[key] = _mergeNestedMaps(Map<String, dynamic>.from(result[key]),
-            Map<String, dynamic>.from(value), remoteTimestamp, remoteIsAdmin);
+        // If both are maps, check for 'lastModified' to decide if we replace the whole map or recurse
+        DateTime localItemTimestamp = _getItemTimestamp(result[key] as Map<String,dynamic>);
+        DateTime remoteItemTimestamp = _getItemTimestamp(value as Map<String,dynamic>);
+
+        if (key == '_meta') { // Special handling for _meta map, just take remote
+            result[key] = value;
+        } else if (remoteItemTimestamp.isAfter(localItemTimestamp)) {
+          result[key] = value; // Remote item map is newer, take the whole map
+        } else if (localItemTimestamp.isAfter(remoteItemTimestamp)) {
+          // Local item map is newer, keep local (do nothing for this key)
+        } else { // Timestamps are same or one is missing/invalid, or no timestamp on items themselves
+                 // If same, admin has priority, else recurse to merge fields inside.
+          if (remoteIsAdmin && !isAdmin && remoteItemTimestamp.isAtSameMomentAs(localItemTimestamp)) {
+             result[key] = value;
+          } else {
+             result[key] = _mergeNestedMaps(Map<String, dynamic>.from(result[key] as Map),
+              Map<String, dynamic>.from(value as Map), remotePayloadTimestamp, remoteIsAdmin);
+          }
+        }
       } else if (value is List && result[key] is List) {
-        result[key] = _mergeLists(List.from(result[key]), List.from(value),
-            remoteTimestamp, remoteIsAdmin);
-      } else {
-        // For primitive values in nested maps
-        int localTimestamp =
-            local.containsKey('timestamp') ? local['timestamp'] : 0;
-        int remoteItemTimestamp = remote.containsKey('timestamp')
-            ? remote['timestamp']
-            : remoteTimestamp;
+        result[key] = _mergeLists(List.from(result[key] as List), List.from(value as List),
+            remotePayloadTimestamp, remoteIsAdmin);
+      } else { // Primitive values or type mismatch in nested maps
+        // For direct field replacement within a map if not further merging.
+        // This usually means the map itself was not replaced based on 'lastModified', so we're merging its fields.
+        // Here, remotePayloadTimestamp is the fallback if items don't have their own timestamps.
+        // This specific 'else' implies one is a primitive and the other isn't, or both are primitives.
+        // We generally assume the structure is the same; if not, replacement is based on payload or admin.
+        DateTime localPayloadTimestamp = DateTime.fromMillisecondsSinceEpoch(localData['_meta']?['timestamp'] ?? 0);
 
         if (remoteIsAdmin && !isAdmin) {
           result[key] = value;
-        } else if (remoteItemTimestamp > localTimestamp) {
+        } else if (remotePayloadTimestamp.isAfter(localPayloadTimestamp)) {
+           // This comparison should ideally be against the local item's last modified date if available,
+           // or the local payload's date if we are deciding to overwrite a primitive.
+           // Given we are inside _mergeNestedMaps, it means the parent map wasn't replaced wholesale.
+           // So, replacing a primitive field should be fine if the remote payload is generally newer.
           result[key] = value;
         }
       }
@@ -514,61 +579,58 @@ class P2PSyncService {
   }
 
   List _mergeLists(
-      List local, List remote, int remoteTimestamp, bool remoteIsAdmin) {
-    // If the lists contain maps with IDs, merge by ID
-    if (local.isNotEmpty &&
-        local.first is Map &&
-        remote.isNotEmpty &&
-        remote.first is Map) {
-      // Check if items have IDs
-      bool hasIds = false;
-      if (local.first is Map && (local.first as Map).containsKey('id')) {
-        hasIds = true;
-      }
+      List local, List remote, DateTime remotePayloadTimestamp, bool remoteIsAdmin) {
+    if (local.isNotEmpty && local.first is Map && remote.isNotEmpty && remote.first is Map) {
+      bool hasIds = (local.first as Map).containsKey('id');
 
       if (hasIds) {
-        // Create a map of local items by ID
-        Map<String, dynamic> localById = {};
-        for (var item in local) {
-          if (item is Map && item.containsKey('id')) {
-            localById[item['id'].toString()] = item;
+        Map<String, dynamic> localById = {
+          for (var item in local.whereType<Map<String,dynamic>>())
+            if (item.containsKey('id')) item['id'].toString(): item,
+        };
+        List resultList = [];
+
+        for (var remoteItemDynamic in remote.whereType<Map<String,dynamic>>()) {
+          if (!remoteItemDynamic.containsKey('id')) { // Remote item without ID, just add if not present structurally (hard to do)
+            resultList.add(remoteItemDynamic);
+            continue;
           }
-        }
+          String id = remoteItemDynamic['id'].toString();
+          var localItemDynamic = localById[id];
 
-        // Process remote items
-        for (var remoteItem in remote) {
-          if (remoteItem is Map && remoteItem.containsKey('id')) {
-            String id = remoteItem['id'].toString();
+          if (localItemDynamic == null) { // New item, add it
+            resultList.add(remoteItemDynamic);
+            localById.remove(id); // Mark as processed
+          } else { // Existing item, compare timestamps
+            DateTime localItemTimestamp = _getItemTimestamp(localItemDynamic);
+            DateTime remoteItemTimestamp = _getItemTimestamp(remoteItemDynamic);
 
-            if (!localById.containsKey(id)) {
-              // New item, add it
-              localById[id] = remoteItem;
-            } else {
-              // Existing item, check timestamps
-              var localItem = localById[id];
-
-              int localItemTimestamp = localItem.containsKey('timestamp')
-                  ? localItem['timestamp']
-                  : 0;
-              int remoteItemTimestamp = remoteItem.containsKey('timestamp')
-                  ? remoteItem['timestamp']
-                  : remoteTimestamp;
-
+            if (remoteItemTimestamp.isAfter(localItemTimestamp)) {
+              resultList.add(remoteItemDynamic);
+            } else if (localItemTimestamp.isAfter(remoteItemTimestamp)) {
+              resultList.add(localItemDynamic);
+            } else { // Timestamps are same
               if (remoteIsAdmin && !isAdmin) {
-                localById[id] = remoteItem;
-              } else if (remoteItemTimestamp > localItemTimestamp) {
-                localById[id] = remoteItem;
+                resultList.add(remoteItemDynamic);
+              } else {
+                // Optionally, if items are maps, merge them field by field (deep merge)
+                // For now, if timestamps same & not admin override, prefer local.
+                resultList.add(localItemDynamic);
               }
             }
+            localById.remove(id); // Mark as processed
           }
         }
-
-        // Convert back to list
-        return localById.values.toList();
+        // Add any remaining local items that were not in remote (shouldn't typically happen if remote is comprehensive)
+        resultList.addAll(localById.values);
+        return resultList;
       }
     }
 
-    // For lists without IDs or non-map items, use a set-based approach
+    // For lists without IDs, or non-map items, or if one list is empty: use a set-based approach for simple union.
+    // This might not be ideal for all scenarios (e.g., list of chat messages where order matters and items don't have unique IDs but are timestamped).
+    // For chat messages, they usually have timestamps and might be merged then sorted.
+    // For now, simple union for non-ID'd lists.
     Set combinedSet = Set.from(local);
     combinedSet.addAll(remote);
     return combinedSet.toList();
