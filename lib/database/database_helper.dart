@@ -17,7 +17,28 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(path, version: 4, onCreate: _createDB, onUpgrade: _onUpgradeDB); // Incremented version to 4
+  }
+
+  Future _onUpgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE users ADD COLUMN community_tree_points INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE users ADD COLUMN income_pool_points INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE users ADD COLUMN amazon_coupon_points INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE users ADD COLUMN paypal_points INTEGER DEFAULT 0");
+    }
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE users ADD COLUMN owned_tree_skins TEXT DEFAULT ''");
+    }
+    if (oldVersion < 4) {
+      // Add subscription columns for version 4
+      await db.execute("ALTER TABLE users ADD COLUMN active_subscription_id TEXT"); // Nullable
+      await db.execute("ALTER TABLE users ADD COLUMN subscription_expiry_date TEXT"); // Nullable
+      await db.execute("ALTER TABLE users ADD COLUMN is_free_trial_active INTEGER DEFAULT 0"); // Boolean, 0=false
+      await db.execute("ALTER TABLE users ADD COLUMN free_trial_expiry_date TEXT"); // Nullable
+    }
+    // Add further migration steps for future versions here
+    // if (oldVersion < 5) { ... }
   }
 
   Future _createDB(Database db, int version) async {
@@ -35,7 +56,16 @@ class DatabaseHelper {
       bed $nullableTextType,
       role $textType, -- 'Roommate-Admin', 'Roommate'
       trust_score $integerType DEFAULT 0,
-      coins $integerType DEFAULT 0
+      coins $integerType DEFAULT 0,
+      community_tree_points $integerType DEFAULT 0,
+      income_pool_points $integerType DEFAULT 0,
+      amazon_coupon_points $integerType DEFAULT 0,
+      paypal_points $integerType DEFAULT 0,
+      owned_tree_skins $textType DEFAULT '',
+      active_subscription_id $nullableTextType,
+      subscription_expiry_date $nullableTextType,
+      is_free_trial_active $boolType DEFAULT 0,
+      free_trial_expiry_date $nullableTextType
     )
     ''');
 
@@ -139,7 +169,14 @@ class DatabaseHelper {
     final db = await instance.database;
     final maps = await db.query(
       'users',
-      columns: ['id', 'name', 'bed', 'role', 'trust_score', 'coins'],
+      columns: [
+        'id', 'name', 'bed', 'role', 'trust_score', 'coins',
+        'community_tree_points', 'income_pool_points', 'amazon_coupon_points', 'paypal_points',
+        'owned_tree_skins',
+        // Added new subscription columns
+        'active_subscription_id', 'subscription_expiry_date',
+        'is_free_trial_active', 'free_trial_expiry_date'
+      ],
       where: 'id = ?',
       whereArgs: [id],
     );
@@ -173,6 +210,8 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> readAllUsers() async {
     final db = await instance.database;
+    // Ensure all columns are fetched if AppUser.fromMap expects them all.
+    // Querying without explicit columns list fetches all, which is also an option.
     return await db.query('users');
   }
 

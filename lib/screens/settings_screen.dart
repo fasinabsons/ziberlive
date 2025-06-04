@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 import '../providers/app_state_provider.dart';
 import 'premium_features_screen.dart';
 import 'bulk_import_export_screen.dart';
+import 'package:ziberlive/config.dart'; // Import config for kSettingsAdsDailyCap
+import 'amazon_coupons_screen.dart'; // Import the new AmazonCouponsScreen
+import 'paypal_rewards_screen.dart'; // Import the new PayPalRewardsScreen
+import 'income_pool_screen.dart'; // Import the new IncomePoolScreen
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -224,6 +228,99 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+            ),
+          ),
+          const SizedBox(height: 16), // Spacing before new card
+          Card(
+            child: Consumer<AppStateProvider>( // Use Consumer to easily update UI based on ad state
+              builder: (context, appStateConsumer, child) {
+                bool canWatchAd = appStateConsumer.canWatchSettingsAd();
+                return ListTile(
+                  leading: Icon(
+                    Icons.slow_motion_video_rounded, // Icon for rewarded video
+                    color: canWatchAd ? Theme.of(context).colorScheme.primary : Theme.of(context).disabledColor,
+                  ),
+                  title: Text(
+                    'Watch Ad for Rewards',
+                    style: TextStyle(
+                      color: canWatchAd ? null : Theme.of(context).disabledColor,
+                    ),
+                  ),
+                  subtitle: Text(
+                    canWatchAd
+                      ? "${appStateConsumer.settingsAdsLeftToday} of $kSettingsAdsDailyCap ads left today"
+                      : "Daily ad limit reached. Try again tomorrow.",
+                    style: TextStyle(
+                      color: canWatchAd ? null : Theme.of(context).disabledColor,
+                    ),
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 18,
+                    color: canWatchAd ? null : Theme.of(context).disabledColor,
+                  ),
+                  enabled: canWatchAd,
+                  onTap: canWatchAd
+                      ? () async {
+                          bool adInitiated = await appStateConsumer.showSettingsRewardedAd();
+                          if (adInitiated) {
+                            // Optionally show a brief confirmation that ad process started
+                            // Actual reward confirmation will come from ad callbacks via AppStateProvider
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Attempting to show ad...'), duration: Duration(seconds: 2)),
+                            );
+                          } else {
+                            // This case (cap reached) is handled by enabled state, but as a fallback:
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cannot show ad now. Daily limit might be reached.'), duration: Duration(seconds: 2)),
+                            );
+                          }
+                        }
+                      : null, // onTap is null if disabled
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16), // Spacing before new card
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.shopping_cart_checkout_rounded), // Icon for Amazon/coupons
+              title: const Text('Amazon Coupons'),
+              subtitle: const Text('View and redeem your Amazon coupon points'),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const AmazonCouponsScreen()),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16), // Spacing before new card
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.paypal_rounded, color: Colors.blue[800]), // Icon for PayPal
+              title: const Text('PayPal Rewards'),
+              subtitle: const Text('View and redeem your PayPal points for cash'),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const PayPalRewardsScreen()),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.group_work_rounded, color: Colors.orangeAccent),
+              title: const Text('Income Pool Collaboration'),
+              subtitle: const Text('View collective goals and contribute points'),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const IncomePoolScreen()),
+                );
+              },
             ),
           ),
         ],
